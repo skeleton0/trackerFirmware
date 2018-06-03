@@ -81,13 +81,56 @@ bool Sim7kInterface::isOn()
   return mIsOn;
 }
 
-bool Sim7kInterface::handleUnsolicitedMsg(const char* const msg)
+bool Sim7kInterface::sendCommand(const char* command, char* response, const size_t bufferSize)
+{
+  if (!mIsOn)
+  {
+    return false;
+  }
+  
+  mUartStream.print(command);
+
+  bool foundLineFeed{false};
+  
+  for (int i{0}; i < bufferSize; i++)
+  {
+    int nextByte = mUartStream.read();
+    while (nextByte == -1)
+    {
+      nextByte = mUartStream.read();
+    }
+
+    response[i] = nextByte;
+
+    if (response[i] == '\n')
+    {
+      if (foundLineFeed)
+      {
+        response[i] = '\0';
+        return true;
+      }
+      else
+      {
+        foundLineFeed = true;
+        i--;
+      }
+    }
+    else if (response[i] == '\r')
+    {
+      i--;
+    }
+  }
+
+  return false;
+}
+
+bool Sim7kInterface::handleUnsolicitedMsg(const char* msg)
 {
   bool handled{false};
 
   writeToLog(msg);
   
-  if (strcmp(msg, "RDY") == 0)
+  if (strcmp(msg, "SMS Ready") == 0)
   {
     mIsOn = true;
     handled = true;
@@ -110,7 +153,7 @@ bool Sim7kInterface::handleUnsolicitedMsg(const char* const msg)
   return handled;
 }
 
-void Sim7kInterface::writeToLog(const char* const msg)
+void Sim7kInterface::writeToLog(const char* msg)
 {
   if (mLog)
   {

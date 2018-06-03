@@ -12,10 +12,11 @@ class Sim7kInterface
   void turnOn();
   void turnOff();
   bool isOn();
+  bool sendCommand(const char* command, char* response, const size_t bufferSize);
 
   private:
-  bool handleUnsolicitedMsg(const char* const msg);
-  void writeToLog(const char* const msg);
+  bool handleUnsolicitedMsg(const char* msg);
+  void writeToLog(const char* msg);
   
   SoftwareSerial mUartStream;
   bool mIsOn;
