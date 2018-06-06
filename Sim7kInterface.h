@@ -15,7 +15,8 @@ class Sim7kInterface
   bool sendCommand(const char* command, char* response, const size_t bufferSize);
 
   private:
-  bool handleUnsolicitedMsg(const char* msg);
+  bool readLineFromUart(char* response, const size_t bufferSize);
+  void handleUnsolicitedResponse(const char* response);
   void writeToLog(const char* msg);
   
   SoftwareSerial mUartStream;

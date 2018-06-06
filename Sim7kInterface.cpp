@@ -20,43 +20,16 @@ void Sim7kInterface::setLogStream(HardwareSerial* log)
 void Sim7kInterface::tick()
 {  
   if (mUartStream.available())
-  { 
-    const uint8_t bufferSize = 50;
-    char msgBuffer[bufferSize];
-    bool foundFirstLf = false;
+  {
+    return;
+  }
 
-    //messages come in the form <CR><LF><Msg><CR><LF>
-    for (int i = 0; (i < bufferSize); i++)
-    {      
-      int nextByte = mUartStream.read();
+  const size_t bufferSize{50};
+  char responseBuffer[bufferSize];
 
-      //this is because I think on occasion the arduino reads faster than the sim7k sends
-      while (nextByte == -1)
-      {
-        nextByte = mUartStream.read();
-      }
-      
-      msgBuffer[i] = nextByte;
-
-      if (msgBuffer[i] == '\n')
-      { 
-        if (foundFirstLf)
-        {
-          msgBuffer[i] = '\0';
-          handleUnsolicitedMsg(msgBuffer);
-          break;
-        }
-        else
-        {
-          foundFirstLf = true;
-          i--;
-        }
-      }
-      else if (msgBuffer[i] == '\r')
-      {
-        i--;
-      }
-    }
+  if (readLineFromUart(responseBuffer, bufferSize))
+  {
+    handleUnsolicitedResponse(responseBuffer); 
   }
 }
 
@@ -89,12 +62,21 @@ bool Sim7kInterface::sendCommand(const char* command, char* response, const size
   }
   
   mUartStream.print(command);
-
-  bool foundLineFeed{false};
   
+  return readLineFromUart(response, bufferSize);
+}
+
+//responses from modem are in the form <CR><LF><msg><CR><LF>
+//goal is to return just <msg>
+bool Sim7kInterface::readLineFromUart(char* response, const size_t bufferSize)
+{
+  bool foundLineFeed{false};
+
   for (int i{0}; i < bufferSize; i++)
   {
-    int nextByte = mUartStream.read();
+   char nextByte = mUartStream.read();
+
+    //need this loop because arduino will read faster than uart stream transmits
     while (nextByte == -1)
     {
       nextByte = mUartStream.read();
@@ -102,40 +84,56 @@ bool Sim7kInterface::sendCommand(const char* command, char* response, const size
 
     response[i] = nextByte;
 
-    if (response[i] == '\n')
+    switch (response[i])
     {
+      case '\n':
       if (foundLineFeed)
       {
-        response[i] = '\0';
-        return true;
+          response[i] = '\0';
+          return true;
       }
       else
       {
         foundLineFeed = true;
         i--;
       }
-    }
-    else if (response[i] == '\r')
-    {
+
+      break;
+      
+      case '\r':
+      case '\0':
       i--;
+      break;
     }
+  }
+
+  //read to buffer failed, so finish flushing the line from the uart stream
+  char nextByte{0};
+  while (!foundLineFeed && nextByte != '\n')
+  {
+    if (nextByte == '\n')
+    {
+      foundLineFeed = true;
+    }
+    
+    nextByte = mUartStream.read();
   }
 
   return false;
 }
 
-bool Sim7kInterface::handleUnsolicitedMsg(const char* msg)
+void Sim7kInterface::handleUnsolicitedResponse(const char* response)
 {
   bool handled{false};
 
-  writeToLog(msg);
+  writeToLog(response);
   
-  if (strcmp(msg, "SMS Ready") == 0)
+  if (strcmp(response, "SMS Ready") == 0)
   {
     mIsOn = true;
     handled = true;
   }
-  else if (strcmp(msg, "NORMAL POWER DOWN") == 0)
+  else if (strcmp(response, "NORMAL POWER DOWN") == 0)
   {
     mIsOn = false;
     handled = true;
