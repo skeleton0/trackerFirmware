@@ -5,7 +5,7 @@
 Sim7kInterface::Sim7kInterface() : 
 mLog(nullptr),
 mUartStream(10, 11), 
-mIsOn(false)
+mModemIsOn(false)
 {
   pinMode(6, OUTPUT);
   digitalWrite(6, HIGH);
@@ -33,7 +33,7 @@ void Sim7kInterface::tick()
   }
 }
 
-void Sim7kInterface::turnOn()
+void Sim7kInterface::turnModemOn()
 {
   digitalWrite(6, LOW);
   delay(200);
@@ -41,7 +41,7 @@ void Sim7kInterface::turnOn()
   delay(4000);
 }
 
-void Sim7kInterface::turnOff()
+void Sim7kInterface::turnModemOff()
 {
   digitalWrite(6, LOW);
   delay(1400);
@@ -49,21 +49,31 @@ void Sim7kInterface::turnOff()
   delay(1400);
 }
 
-bool Sim7kInterface::isOn()
+bool Sim7kInterface::modemIsOn()
 {
-  return mIsOn;
+  return mModemIsOn;
 }
 
-bool Sim7kInterface::sendCommand(const char* command, char* response, const size_t bufferSize)
+bool Sim7kInterface::turnOnGnss()
 {
-  if (!mIsOn)
+  if (!mModemIsOn)
   {
     return false;
   }
-  
-  mUartStream.print(command);
-  
-  return readLineFromUart(response, bufferSize);
+
+  mUartStream.write("AT+CGNSPWR=1\r\n");
+
+  const size_t responseBuffer{50};
+  char response[responseBuffer];
+  if (readLineFromUart(response, responseBuffer))
+  {
+    if (strcmp(response, "OK"))
+    {
+      return true; 
+    }
+  }
+
+  return false;
 }
 
 //responses from modem are in the form <CR><LF><msg><CR><LF>
@@ -122,6 +132,18 @@ bool Sim7kInterface::readLineFromUart(char* response, const size_t bufferSize)
   return false;
 }
 
+bool Sim7kInterface::sendCommand(const char* command, char* response, const size_t bufferSize)
+{
+  if (!mModemIsOn)
+  {
+    return false;
+  }
+  
+  mUartStream.write(command);
+  
+  return readLineFromUart(response, bufferSize);
+}
+
 void Sim7kInterface::handleUnsolicitedResponse(const char* response)
 {
   bool handled{false};
@@ -130,12 +152,12 @@ void Sim7kInterface::handleUnsolicitedResponse(const char* response)
   
   if (strcmp(response, "SMS Ready") == 0)
   {
-    mIsOn = true;
+    mModemIsOn = true;
     handled = true;
   }
   else if (strcmp(response, "NORMAL POWER DOWN") == 0)
   {
-    mIsOn = false;
+    mModemIsOn = false;
     handled = true;
   }
 
@@ -147,8 +169,6 @@ void Sim7kInterface::handleUnsolicitedResponse(const char* response)
   {
     writeToLog("Unsolicited msg was not handled.");
   }
-
-  return handled;
 }
 
 void Sim7kInterface::writeToLog(const char* msg)
