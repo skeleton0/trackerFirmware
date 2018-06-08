@@ -28,8 +28,14 @@ bool Sim7kInterface::turnOn()
   digitalWrite(6, HIGH);
   delay(4000);
 
-  flushUart();
-
+  if (mUartStream.available())
+  {
+    //set initial settings
+    sendCommand("AT+IPR=4800");
+    sendCommand("ATE0");
+    flushUart();
+  }
+  
   return isOn();
 }
 
