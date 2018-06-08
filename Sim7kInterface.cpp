@@ -6,6 +6,7 @@ Sim7kInterface::Sim7kInterface(HardwareSerial* log) :
 mLog(log),
 mUartStream(10, 11)
 {
+  //init buffer with empty string
   mRxBuffer[0] = '\0';
   
   pinMode(6, OUTPUT);
@@ -16,7 +17,7 @@ mUartStream(10, 11)
   mUartStream.begin(4800);
 
   sendCommand("AT");
-  if (checkNextResponse("AT") || checkLastResponse("ATOK")) //ATOK when echo mode is enabled
+  if (checkNextResponse("ATOK") || checkLastResponse("OK")) //ATOK when echo mode is enabled
   {
     writeToLog("Modem is initially on.");
     sendInitialSettings();
@@ -45,7 +46,7 @@ bool Sim7kInterface::turnOn()
     flushUart();
 
     sendCommand("AT");
-    if (checkNextResponse("AT") || checkLastResponse("ATOK"))
+    if (checkNextResponse("ATOK") || checkLastResponse("OK"))
     {
       sendInitialSettings();
       return true;

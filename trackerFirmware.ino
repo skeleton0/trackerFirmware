@@ -9,18 +9,19 @@ void setup() {
   if (sim7k->turnOn())
   {
     Serial.println("Modem is on.");
-  }
-  else
-  {
-    Serial.println("Failed to turn modem on.");
-  }
 
-  if (sim7k->isOn())
-  {
     if (sim7k->turnOnGnss())
     {
       Serial.println("GNSS is on.");
     }
+    else
+    {
+      Serial.println("Failed to turn GNSS on.");
+    }
+  }
+  else
+  {
+    Serial.println("Failed to turn modem on.");
   }
 }
 
