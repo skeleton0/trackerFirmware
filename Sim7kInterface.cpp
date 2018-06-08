@@ -2,15 +2,18 @@
 
 #include <Arduino.h>
 
-Sim7kInterface::Sim7kInterface() : 
+Sim7kInterface::Sim7kInterface() :
 mLog(nullptr),
 mUartStream(10, 11)
 {
+  mRxBuffer[0] = '\0';
+  
   pinMode(6, OUTPUT);
   digitalWrite(6, HIGH);
   mUartStream.begin(4800);
 
-  if (isOn())
+  sendCommand("AT");
+  if (checkNextResponse("AT") || checkLastResponse("ATOK")) //ATOK when echo mode is enabled
   {
     sendInitialSettings();
   }
@@ -33,7 +36,8 @@ bool Sim7kInterface::turnOn()
   digitalWrite(6, HIGH);
   delay(4000);
 
-  if (isOn())
+  sendCommand("AT");
+  if (checkNextResponse("AT") || checkLastResponse("ATOK"))
   {
     sendInitialSettings();
     return true;
@@ -50,20 +54,21 @@ bool Sim7kInterface::turnOff()
   }
   
   sendCommand("AT+CPOWD=0");
-  return checkResponse("NORMAL POWER DOWN");
+  return checkNextResponse("NORMAL POWER DOWN");
 }
 
 bool Sim7kInterface::isOn()
 {
+  writeToLog("Checking if modem is on...");
   sendCommand("AT");
-  return checkResponse("OK");
+  return checkNextResponse("OK");
 }
 
 bool Sim7kInterface::turnOnGnss()
 {
   sendCommand("AT+CGNSPWR=1");
 
-  return checkResponse("OK");
+  return checkNextResponse("OK");
 }
 
 void Sim7kInterface::sendCommand(const char* command)
@@ -167,7 +172,7 @@ void Sim7kInterface::flushUart()
   }
 }
 
-bool Sim7kInterface::checkResponse(const char* expectedResponse)
+bool Sim7kInterface::checkNextResponse(const char* expectedResponse)
 {
   if (readLineFromUart())
   {
@@ -175,6 +180,11 @@ bool Sim7kInterface::checkResponse(const char* expectedResponse)
   }
 
   return false;
+}
+
+bool Sim7kInterface::checkLastResponse(const char* expectedResponse)
+{
+  return strcmp(mRxBuffer, expectedResponse) == 0;
 }
 
 void Sim7kInterface::writeToLog(const char* msg)
