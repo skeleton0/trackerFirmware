@@ -192,6 +192,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout)
 
 void Sim7kInterface::flushUart()
 {
+  writeToLog("Flushing UART stream.");
   while (mUartStream.available())
   {
     readLineFromUart();
