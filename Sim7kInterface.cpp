@@ -2,8 +2,8 @@
 
 #include <Arduino.h>
 
-Sim7kInterface::Sim7kInterface() :
-mLog(nullptr),
+Sim7kInterface::Sim7kInterface(HardwareSerial* log) :
+mLog(log),
 mUartStream(10, 11)
 {
   mRxBuffer[0] = '\0';
@@ -15,13 +15,14 @@ mUartStream(10, 11)
   sendCommand("AT");
   if (checkNextResponse("AT") || checkLastResponse("ATOK")) //ATOK when echo mode is enabled
   {
+    writeToLog("Modem is initially on.");
     sendInitialSettings();
   }
-}
-
-void Sim7kInterface::setLogStream(HardwareSerial* log)
-{
-  mLog = log;
+  else
+  {
+    writeToLog("Modem is initially off."); 
+  }
+  
 }
 
 bool Sim7kInterface::turnOn()
@@ -34,7 +35,9 @@ bool Sim7kInterface::turnOn()
   digitalWrite(6, LOW);
   delay(200);
   digitalWrite(6, HIGH);
-  delay(4000);
+  delay(5000);
+
+  flushUart(); //modem sends several commands on start up
 
   sendCommand("AT");
   if (checkNextResponse("AT") || checkLastResponse("ATOK"))
@@ -82,12 +85,7 @@ void Sim7kInterface::sendCommand(const char* command)
 //responses from modem are in the form <CR><LF><response><CR><LF>
 //if successful, places just <response> in the mRxBuffer
 bool Sim7kInterface::readLineFromUart(const uint32_t timeout)
-{
-  if (!mUartStream.available())
-  {
-    return false;
-  }
-  
+{ 
   bool foundLineFeed{false};
 
   for (int i{0}; i < RX_BUFFER_SIZE; i++)
@@ -201,5 +199,7 @@ void Sim7kInterface::sendInitialSettings()
   //set initial settings
   sendCommand("AT+IPR=4800");
   sendCommand("ATE0");
+
+  flushUart();
 }
 

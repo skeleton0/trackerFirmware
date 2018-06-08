@@ -7,9 +7,8 @@ class HardwareSerial;
 class Sim7kInterface
 {
   public:
-  Sim7kInterface();
+  Sim7kInterface(HardwareSerial* log = nullptr);
 
-  void setLogStream(HardwareSerial* log);
   bool turnOn();
   bool turnOff();
   bool isOn();
