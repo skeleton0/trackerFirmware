@@ -34,22 +34,45 @@ bool Sim7kInterface::turnOn()
   {
     return true;
   }
-  
-  digitalWrite(6, LOW);
-  delay(200);
-  digitalWrite(6, HIGH);
-  delay(4000);
 
-  flushUart(); //modem sends several commands on start up
-
-  sendCommand("AT");
-  if (checkNextResponse("AT") || checkLastResponse("ATOK"))
+  auto turnOnViaPin = [this](const uint8_t pin) -> bool
   {
-    sendInitialSettings();
+    digitalWrite(pin, LOW);
+    delay(300);
+    digitalWrite(pin, HIGH);
+    delay(5000);
+
+    flushUart();
+
+    sendCommand("AT");
+    if (checkNextResponse("AT") || checkLastResponse("ATOK"))
+    {
+      sendInitialSettings();
+      return true;
+    }
+
+    return false;
+  };
+
+  if (turnOnViaPin(6))
+  {
+    writeToLog("Turned on modem via pin 6.");
     return true;
   }
+  else
+  {
+    writeToLog("Failed to start modem via pin 6.");
+    writeToLog("Attempting to start modem with emergency reset via pin 7.");
+
+    if(turnOnViaPin(7))
+    {
+      writeToLog("Emergency reset successful.");
+      return true;
+    }
+
+    writeToLog("Emergency reset failed.");
+  }
   
-  writeToLog("Failed to start modem.");
   return false;
 }
 
