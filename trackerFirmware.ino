@@ -15,6 +15,14 @@ void setup() {
   {
     Serial.println("Failed to turn modem on.");
   }
+
+  if (sim7k->isOn())
+  {
+    if (sim7k->turnOnGnss())
+    {
+      Serial.println("GNSS is on.");
+    }
+  }
 }
 
 void loop() {

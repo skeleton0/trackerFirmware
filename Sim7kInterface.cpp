@@ -87,6 +87,7 @@ bool Sim7kInterface::readLineFromUart()
       if (foundLineFeed)
       {
           mRxBuffer[i] = '\0';
+          writeToLog(mRxBuffer);
           return true;
       }
       else
@@ -123,6 +124,7 @@ bool Sim7kInterface::readLineFromUart()
   //set buffer to empty string
   mRxBuffer[0] = '\0';
 
+  writeToLog("Failed to read line from UART buffer.");
   return false;
 }
 
@@ -140,7 +142,7 @@ void Sim7kInterface::writeToLog(const char* msg)
 {
   if (mLog)
   {
-    mLog->write("Log - ");
+    mLog->write("Sim7k log - ");
     mLog->println(msg);
   }
 }
