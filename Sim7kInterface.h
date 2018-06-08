@@ -21,6 +21,7 @@ class Sim7kInterface
   void flushUart();
   bool checkResponse(const char* expectedResponse);
   void writeToLog(const char* msg);
+  void sendInitialSettings();
   
   SoftwareSerial mUartStream;
   char mRxBuffer[RX_BUFFER_SIZE];

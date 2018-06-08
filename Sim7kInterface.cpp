@@ -9,6 +9,11 @@ mUartStream(10, 11)
   pinMode(6, OUTPUT);
   digitalWrite(6, HIGH);
   mUartStream.begin(4800);
+
+  if (isOn())
+  {
+    sendInitialSettings();
+  }
 }
 
 void Sim7kInterface::setLogStream(HardwareSerial* log)
@@ -28,15 +33,13 @@ bool Sim7kInterface::turnOn()
   digitalWrite(6, HIGH);
   delay(4000);
 
-  if (mUartStream.available())
+  if (isOn())
   {
-    //set initial settings
-    sendCommand("AT+IPR=4800");
-    sendCommand("ATE0");
-    flushUart();
+    sendInitialSettings();
+    return true;
   }
   
-  return isOn();
+  return false;
 }
 
 bool Sim7kInterface::turnOff()
@@ -181,5 +184,12 @@ void Sim7kInterface::writeToLog(const char* msg)
     mLog->write("Sim7k log - ");
     mLog->println(msg);
   }
+}
+
+void Sim7kInterface::sendInitialSettings()
+{
+  //set initial settings
+  sendCommand("AT+IPR=4800");
+  sendCommand("ATE0");
 }
 
