@@ -16,8 +16,9 @@ class Sim7kInterface
   bool turnOnGnss();
   
   private:
-  void flushUart();
+  void sendCommand(const char* command);
   bool readLineFromUart(const uint32_t timeout = 5000);
+  void flushUart();
   bool checkResponse(const char* expectedResponse);
   void writeToLog(const char* msg);
   

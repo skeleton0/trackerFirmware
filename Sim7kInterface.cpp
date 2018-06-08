@@ -40,29 +40,29 @@ bool Sim7kInterface::turnOff()
     return true;
   }
   
-  mUartStream.write("AT+CPOWD=0\r\n");
+  sendCommand("AT+CPOWD=0");
   return checkResponse("NORMAL POWER DOWN");
 }
 
 bool Sim7kInterface::isOn()
 {
-  mUartStream.write("AT\r\n");
+  sendCommand("AT");
   return checkResponse("OK");
 }
 
 bool Sim7kInterface::turnOnGnss()
 {
-  mUartStream.write("AT+CGNSPWR=1\r\n");
+  sendCommand("AT+CGNSPWR=1");
 
   return checkResponse("OK");
 }
 
-void Sim7kInterface::flushUart()
+void Sim7kInterface::sendCommand(const char* command)
 {
-  while (mUartStream.available())
-  {
-    readLineFromUart();
-  }
+  writeToLog("Sending to modem:");
+  writeToLog(command);
+  mUartStream.write(command);
+  mUartStream.write("\r\n");
 }
 
 //responses from modem are in the form <CR><LF><response><CR><LF>
@@ -100,6 +100,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout)
       if (foundLineFeed)
       {
           mRxBuffer[i] = '\0';
+          writeToLog("Received response from modem:");
           writeToLog(mRxBuffer);
           return true;
       }
@@ -122,10 +123,22 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout)
     }
   }
 
-  //read to buffer failed, so finish flushing the line from the uart stream
+  writeToLog("Failed to read line from UART buffer.");
+
+  //set buffer to empty string
+  mRxBuffer[0] = '\0';
+
+  //read to buffer failed, so finish flushing the line from the uart stream to avoid leaving a partially consumed response on the buffer
+  const uint32_t startTimer = millis();
   char nextByte{0};
   while (!foundLineFeed && nextByte != '\n')
   {
+    if (millis() - startTimer > timeout)
+    {
+      writeToLog("readLineFromUart() timed out while flushing buffer after read failure.");
+      return false;
+    }
+    
     if (nextByte == '\n')
     {
       foundLineFeed = true;
@@ -133,12 +146,16 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout)
     
     nextByte = mUartStream.read();
   }
-
-  //set buffer to empty string
-  mRxBuffer[0] = '\0';
-
-  writeToLog("Failed to read line from UART buffer.");
+  
   return false;
+}
+
+void Sim7kInterface::flushUart()
+{
+  while (mUartStream.available())
+  {
+    readLineFromUart();
+  }
 }
 
 bool Sim7kInterface::checkResponse(const char* expectedResponse)
