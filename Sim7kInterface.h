@@ -1,5 +1,7 @@
 #include <SoftwareSerial.h>
 
+#define RX_BUFFER_SIZE 256
+
 class HardwareSerial;
 
 class Sim7kInterface
@@ -8,20 +10,19 @@ class Sim7kInterface
   Sim7kInterface();
 
   void setLogStream(HardwareSerial* log);
-  void tick();
-  void turnModemOn();
-  void turnModemOff();
-  bool modemIsOn();
+  bool turnOn();
+  bool turnOff();
+  bool isOn();
   bool turnOnGnss();
   
   private:
-  bool readLineFromUart(char* response, const size_t bufferSize);
-  bool sendCommand(const char* command, char* response, const size_t bufferSize);
-  void handleUnsolicitedResponse(const char* response);
+  void flushUart();
+  bool readLineFromUart();
+  bool checkResponse(const char* expectedResponse);
   void writeToLog(const char* msg);
   
   SoftwareSerial mUartStream;
-  bool mModemIsOn;
+  char mRxBuffer[RX_BUFFER_SIZE];
   HardwareSerial* mLog;
 };
 

@@ -4,8 +4,7 @@
 
 Sim7kInterface::Sim7kInterface() : 
 mLog(nullptr),
-mUartStream(10, 11), 
-mModemIsOn(false)
+mUartStream(10, 11)
 {
   pinMode(6, OUTPUT);
   digitalWrite(6, HIGH);
@@ -17,72 +16,62 @@ void Sim7kInterface::setLogStream(HardwareSerial* log)
   mLog = log;
 }
 
-void Sim7kInterface::tick()
-{  
-  if (mUartStream.available())
-  {
-    return;
-  }
-
-  const size_t bufferSize{50};
-  char responseBuffer[bufferSize];
-
-  if (readLineFromUart(responseBuffer, bufferSize))
-  {
-    handleUnsolicitedResponse(responseBuffer); 
-  }
-}
-
-void Sim7kInterface::turnModemOn()
+bool Sim7kInterface::turnOn()
 {
+  if (isOn())
+  {
+    return true;
+  }
+  
   digitalWrite(6, LOW);
   delay(200);
   digitalWrite(6, HIGH);
   delay(4000);
+
+  flushUart();
+
+  return isOn();
 }
 
-void Sim7kInterface::turnModemOff()
+bool Sim7kInterface::turnOff()
 {
-  digitalWrite(6, LOW);
-  delay(1400);
-  digitalWrite(6, HIGH);
-  delay(1400);
+  if (!isOn())
+  {
+    return true;
+  }
+  
+  mUartStream.write("AT+CPOWD=0\r\n");
+  return checkResponse("NORMAL POWER DOWN");
 }
 
-bool Sim7kInterface::modemIsOn()
+bool Sim7kInterface::isOn()
 {
-  return mModemIsOn;
+  mUartStream.write("AT\r\n");
+  return checkResponse("OK");
 }
 
 bool Sim7kInterface::turnOnGnss()
 {
-  if (!mModemIsOn)
-  {
-    return false;
-  }
-
   mUartStream.write("AT+CGNSPWR=1\r\n");
 
-  const size_t responseBuffer{50};
-  char response[responseBuffer];
-  if (readLineFromUart(response, responseBuffer))
-  {
-    if (strcmp(response, "OK"))
-    {
-      return true; 
-    }
-  }
+  return checkResponse("OK");
+}
 
-  return false;
+void Sim7kInterface::flushUart()
+{
+  while (mUartStream.available())
+  {
+    readLineFromUart();
+  }
 }
 
 //responses from modem are in the form <CR><LF><msg><CR><LF>
 //goal is to return just <msg>
-bool Sim7kInterface::readLineFromUart(char* response, const size_t bufferSize)
+bool Sim7kInterface::readLineFromUart()
 {
   bool foundLineFeed{false};
 
-  for (int i{0}; i < bufferSize; i++)
+  for (int i{0}; i < RX_BUFFER_SIZE; i++)
   {
    char nextByte = mUartStream.read();
 
@@ -92,14 +81,12 @@ bool Sim7kInterface::readLineFromUart(char* response, const size_t bufferSize)
       nextByte = mUartStream.read();
     }
 
-    response[i] = nextByte;
-
-    switch (response[i])
+    switch (nextByte)
     {
       case '\n':
       if (foundLineFeed)
       {
-          response[i] = '\0';
+          mRxBuffer[i] = '\0';
           return true;
       }
       else
@@ -113,6 +100,10 @@ bool Sim7kInterface::readLineFromUart(char* response, const size_t bufferSize)
       case '\r':
       case '\0':
       i--;
+      break;
+
+      default:
+      mRxBuffer[i] = nextByte;
       break;
     }
   }
@@ -129,46 +120,20 @@ bool Sim7kInterface::readLineFromUart(char* response, const size_t bufferSize)
     nextByte = mUartStream.read();
   }
 
+  //set buffer to empty string
+  mRxBuffer[0] = '\0';
+
   return false;
 }
 
-bool Sim7kInterface::sendCommand(const char* command, char* response, const size_t bufferSize)
+bool Sim7kInterface::checkResponse(const char* expectedResponse)
 {
-  if (!mModemIsOn)
+  if (readLineFromUart())
   {
-    return false;
-  }
-  
-  mUartStream.write(command);
-  
-  return readLineFromUart(response, bufferSize);
-}
-
-void Sim7kInterface::handleUnsolicitedResponse(const char* response)
-{
-  bool handled{false};
-
-  writeToLog(response);
-  
-  if (strcmp(response, "SMS Ready") == 0)
-  {
-    mModemIsOn = true;
-    handled = true;
-  }
-  else if (strcmp(response, "NORMAL POWER DOWN") == 0)
-  {
-    mModemIsOn = false;
-    handled = true;
+    return strcmp(mRxBuffer, expectedResponse) == 0;
   }
 
-  if (handled)
-  {
-    writeToLog("Unsolicited msg was handled.");
-  }
-  else
-  {
-    writeToLog("Unsolicited msg was not handled.");
-  }
+  return false;
 }
 
 void Sim7kInterface::writeToLog(const char* msg)

@@ -6,11 +6,16 @@ void setup() {
   Serial.begin(4800);
   sim7k = new Sim7kInterface();
   sim7k->setLogStream(&Serial);
-  
-  sim7k->turnModemOff();
-  sim7k->turnModemOn();
+
+  if (sim7k->turnOn())
+  {
+    Serial.println("Modem is on.");
+  }
+  else
+  {
+    Serial.println("Failed to turn modem on.");
+  }
 }
 
 void loop() {
-  sim7k->tick();
 }
