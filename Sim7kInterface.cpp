@@ -9,7 +9,10 @@ mUartStream(10, 11)
   mRxBuffer[0] = '\0';
   
   pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
   digitalWrite(6, HIGH);
+  digitalWrite(7, HIGH);
+  
   mUartStream.begin(4800);
 
   sendCommand("AT");
@@ -35,7 +38,7 @@ bool Sim7kInterface::turnOn()
   digitalWrite(6, LOW);
   delay(200);
   digitalWrite(6, HIGH);
-  delay(5000);
+  delay(4000);
 
   flushUart(); //modem sends several commands on start up
 
@@ -46,6 +49,7 @@ bool Sim7kInterface::turnOn()
     return true;
   }
   
+  writeToLog("Failed to start modem.");
   return false;
 }
 
