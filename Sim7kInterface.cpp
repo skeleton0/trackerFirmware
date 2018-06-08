@@ -65,10 +65,15 @@ void Sim7kInterface::flushUart()
   }
 }
 
-//responses from modem are in the form <CR><LF><msg><CR><LF>
-//goal is to return just <msg>
-bool Sim7kInterface::readLineFromUart()
+//responses from modem are in the form <CR><LF><response><CR><LF>
+//if successful, places just <response> in the mRxBuffer
+bool Sim7kInterface::readLineFromUart(const uint32_t timeout)
 {
+  if (!mUartStream.available())
+  {
+    return false;
+  }
+  
   bool foundLineFeed{false};
 
   for (int i{0}; i < RX_BUFFER_SIZE; i++)
@@ -76,8 +81,16 @@ bool Sim7kInterface::readLineFromUart()
    char nextByte = mUartStream.read();
 
     //need this loop because arduino will read faster than uart stream transmits
+    const uint32_t startTimer = millis();
     while (nextByte == -1)
     {
+      if (millis() - startTimer > timeout)
+      {
+        writeToLog("readLineFromUart() timed out.");
+        mRxBuffer[0] = '\0';
+        return false; 
+      }
+      
       nextByte = mUartStream.read();
     }
 

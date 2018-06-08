@@ -17,7 +17,7 @@ class Sim7kInterface
   
   private:
   void flushUart();
-  bool readLineFromUart();
+  bool readLineFromUart(const uint32_t timeout = 5000);
   bool checkResponse(const char* expectedResponse);
   void writeToLog(const char* msg);
   
