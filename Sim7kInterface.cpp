@@ -84,7 +84,7 @@ bool Sim7kInterface::turnOff()
     return true;
   }
   
-  sendCommand("AT+CPOWD=0");
+  sendCommand("AT+CPOWD=1");
   return checkNextResponse("NORMAL POWER DOWN");
 }
 
