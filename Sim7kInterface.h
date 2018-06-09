@@ -13,6 +13,7 @@ class Sim7kInterface
   bool turnOff();
   bool isOn();
   bool turnOnGnss();
+  bool setApn(const char* apn);
   
   private:
   void sendCommand(const char* command);

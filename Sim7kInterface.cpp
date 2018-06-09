@@ -102,6 +102,24 @@ bool Sim7kInterface::turnOnGnss()
   return checkNextResponse("OK");
 }
 
+bool Sim7kInterface::setApn(const char* apn)
+{
+  const size_t maxApnLen{50};
+  if (strlen(apn) == maxApnLen)
+  {
+    writeToLog("Apn is too long.");
+    return false;
+  }
+
+  char commandBuffer[60] = "AT+CSTT=\"";
+  strcat(commandBuffer, apn);
+  strcat(commandBuffer, "\"");
+
+  sendCommand(commandBuffer);
+
+  return checkNextResponse("OK");
+}
+
 void Sim7kInterface::sendCommand(const char* command)
 {
   writeToLog("Sending to modem:");
