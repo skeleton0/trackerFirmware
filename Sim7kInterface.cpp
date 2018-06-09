@@ -108,6 +108,7 @@ void Sim7kInterface::sendCommand(const char* command)
   writeToLog(command);
   mUartStream.write(command);
   mUartStream.write("\r\n");
+  delay(1000); //give modem time to respond
 }
 
 //responses from modem are in the form <CR><LF><response><CR><LF>
@@ -226,8 +227,10 @@ void Sim7kInterface::writeToLog(const char* msg)
 void Sim7kInterface::sendInitialSettings()
 {
   //set initial settings
-  sendCommand("AT+IPR=4800");
-  sendCommand("ATE0");
+  sendCommand("AT+IPR=4800"); //set baud rate to 4800
+  sendCommand("ATE0");        //disable echo mode
+  sendCommand("AT+CNMP=38");  //use LTE only
+  sendCommand("AT+CMNB=1");   //use CAT-M only
 
   flushUart();
 }
