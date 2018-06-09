@@ -16,6 +16,9 @@ class Sim7kInterface
   bool setApn(const char* apn);
   bool bringUpGprsConnection();
   bool openBearer();
+  bool isInDeactState();
+  bool deactGprs();
+  bool isAssignedIp();
   
   private:
   void sendCommand(const char* command);

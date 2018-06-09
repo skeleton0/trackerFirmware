@@ -170,6 +170,27 @@ bool Sim7kInterface::openBearer()
   return checkNextResponse("OK", 85000);
 }
 
+bool Sim7kInterface::isInDeactState()
+{
+  sendCommand("AT+CIPSTATUS");
+
+  return checkNextResponse("STATE: PDP DEACT");
+}
+
+bool Sim7kInterface::deactGprs()
+{
+  sendCommand("AT+CIPSHUT");
+
+  return checkNextResponse("SHUT OK");
+}
+
+bool Sim7kInterface::isAssignedIp()
+{
+  sendCommand("AT+CIFSR");
+
+  return !checkNextResponse("ERROR");
+}
+
 void Sim7kInterface::sendCommand(const char* command)
 {
   writeToLog("Sending to modem:");
