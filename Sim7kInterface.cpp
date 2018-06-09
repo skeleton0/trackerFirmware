@@ -111,6 +111,22 @@ bool Sim7kInterface::setApn(const char* apn)
     return false;
   }
 
+  //check if APN has already been set to this APN
+  sendCommand("AT+CSTT?");
+
+  //response comes in the form: +CSTT: "apn","","" 
+  char expectedResponse[65] = "+CSTT: \"";
+  strcat(expectedResponse, apn);
+  strcat(expectedResponse, "\",\"\",\"\"");
+  
+  if (checkNextResponse(expectedResponse))
+  {
+    writeToLog("APN was already set.");
+    return true;
+  }
+
+  writeToLog("APN was not already set.");
+
   char commandBuffer[60] = "AT+CSTT=\"";
   strcat(commandBuffer, apn);
   strcat(commandBuffer, "\"");
