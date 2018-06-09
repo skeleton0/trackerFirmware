@@ -119,7 +119,7 @@ bool Sim7kInterface::setApn(const char* apn)
   strcat(expectedResponse, apn);
   strcat(expectedResponse, "\",\"\",\"\"");
   
-  if (checkNextResponse(expectedResponse))
+  if (checkNextResponse(expectedResponse) && checkNextResponse("OK"))
   {
     writeToLog("APN was already set.");
     return true;
@@ -132,6 +132,13 @@ bool Sim7kInterface::setApn(const char* apn)
   strcat(commandBuffer, "\"");
 
   sendCommand(commandBuffer);
+
+  return checkNextResponse("OK");
+}
+
+bool Sim7kInterface::bringUpGprsConnection()
+{
+  sendCommand("AT+CIICR");
 
   return checkNextResponse("OK");
 }

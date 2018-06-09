@@ -14,6 +14,7 @@ class Sim7kInterface
   bool isOn();
   bool turnOnGnss();
   bool setApn(const char* apn);
+  bool bringUpGprsConnection();
   
   private:
   void sendCommand(const char* command);

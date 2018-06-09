@@ -9,28 +9,35 @@ void setup() {
 
   if (!sim7k->turnOn())
   {
-    Serial.println("Failed to turn modem on.");
+    writeToLog("Failed to turn modem on.");
     return;
   }
 
-  Serial.println("Modem is on.");
+  writeToLog("Modem is on.");
   
   if (!sim7k->turnOnGnss())
   {
-    Serial.println("Failed to turn GNSS on.");
+    writeToLog("Failed to turn GNSS on.");
     return;
   }
 
-  Serial.println("GNSS is on.");
+  writeToLog("GNSS is on.");
 
   if (!sim7k->setApn(APN))
   {
-    Serial.println("Failed to set APN.");
+    writeToLog("Failed to set APN.");
     return;
   }
 
-  Serial.println("Set APN.");
+  writeToLog("Set APN.");
 }
 
 void loop() {
 }
+
+void writeToLog(const char* msg)
+{
+  Serial.print("Main log - ");
+  Serial.println(msg);
+}
+
