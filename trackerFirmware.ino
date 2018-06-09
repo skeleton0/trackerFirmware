@@ -30,6 +30,22 @@ void setup() {
   }
 
   writeToLog("Set APN.");
+
+  if (!sim7k->bringUpGprsConnection())
+  {
+    writeToLog("Failed to bring up GPRS connection.");
+    return;
+  }
+
+  writeToLog("Brought up GPRS connection.");
+
+  if (!sim7k->openBearer())
+  {
+    writeToLog("Failed to open bearer.");
+    return;
+  }
+
+  writeToLog("Opened bearer.");
 }
 
 void loop() {

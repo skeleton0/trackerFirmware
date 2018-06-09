@@ -160,14 +160,14 @@ bool Sim7kInterface::bringUpGprsConnection()
 {
   sendCommand("AT+CIICR");
 
-  return checkNextResponse("OK");
+  return checkNextResponse("OK", 85000);
 }
 
 bool Sim7kInterface::openBearer()
 {
   sendCommand("AT+SAPBR=1,1");
 
-  return checkNextResponse("OK");
+  return checkNextResponse("OK", 85000);
 }
 
 void Sim7kInterface::sendCommand(const char* command)
@@ -268,9 +268,9 @@ void Sim7kInterface::flushUart()
   }
 }
 
-bool Sim7kInterface::checkNextResponse(const char* expectedResponse)
+bool Sim7kInterface::checkNextResponse(const char* expectedResponse, const uint32_t timeout)
 {
-  if (readLineFromUart())
+  if (readLineFromUart(timeout))
   {
     return strcmp(mRxBuffer, expectedResponse) == 0;
   }
