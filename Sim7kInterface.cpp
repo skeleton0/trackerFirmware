@@ -163,6 +163,13 @@ bool Sim7kInterface::bringUpGprsConnection()
   return checkNextResponse("OK");
 }
 
+bool Sim7kInterface::openBearer()
+{
+  sendCommand("AT+SAPBR=1,1");
+
+  return checkNextResponse("OK");
+}
+
 void Sim7kInterface::sendCommand(const char* command)
 {
   writeToLog("Sending to modem:");
