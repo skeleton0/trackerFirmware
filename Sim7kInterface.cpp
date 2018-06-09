@@ -122,18 +122,38 @@ bool Sim7kInterface::setApn(const char* apn)
   if (checkNextResponse(expectedResponse) && checkNextResponse("OK"))
   {
     writeToLog("APN was already set.");
-    return true;
+  }
+  else
+  {
+    writeToLog("APN was not already set.");
+    
+    char command[60] = "AT+CSTT=\"";
+    strcat(command, apn);
+    strcat(command, "\"");
+
+    sendCommand(command);
+
+    if (!checkNextResponse("OK"))
+    {
+      writeToLog("Failed to set APN.");
+    }
   }
 
-  writeToLog("APN was not already set.");
+  //set APN in bearer
+  char command[71] = "AT+SAPBR=3,1,\"APN\",\"";
+  strcat(command, apn);
+  strcat(command, "\"");
 
-  char commandBuffer[60] = "AT+CSTT=\"";
-  strcat(commandBuffer, apn);
-  strcat(commandBuffer, "\"");
+  sendCommand(command);
 
-  sendCommand(commandBuffer);
+  if (!checkNextResponse("OK"))
+  {
+    writeToLog("Failed to set APN in bearer settings.");
+    return false;
+  }
 
-  return checkNextResponse("OK");
+  writeToLog("Set APN in bearer settings.");
+  return true;
 }
 
 bool Sim7kInterface::bringUpGprsConnection()
