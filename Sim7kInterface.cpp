@@ -41,7 +41,7 @@ bool Sim7kInterface::turnOn()
     digitalWrite(pin, LOW);
     delay(300);
     digitalWrite(pin, HIGH);
-    delay(5000);
+    delay(10000);
 
     flushUart();
 

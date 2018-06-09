@@ -18,8 +18,6 @@ void setup() {
     {
       Serial.println("Failed to turn GNSS on.");
     }
-
-    sim7k->turnOff();
   }
   else
   {
