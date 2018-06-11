@@ -9,10 +9,22 @@ class Sim7kInterface
   public:
   Sim7kInterface(HardwareSerial* log = nullptr);
 
+  enum class ConnectionState
+  {
+    IP_INITIAL,
+    IP_START,
+    IP_CONFIG,
+    IP_GPRSACT,
+    IP_STATUS,
+    PDP_DEACT,
+    UNDEFINED,
+  };
+
   bool turnOn();
   bool turnOff();
   bool isOn();
   bool turnOnGnss();
+  ConnectionState getConnectionState();
   bool setApn(const char* apn);
   bool bringUpGprsConnection();
   bool isInDeactState();

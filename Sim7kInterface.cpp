@@ -102,6 +102,41 @@ bool Sim7kInterface::turnOnGnss()
   return checkNextResponse("OK");
 }
 
+Sim7kInterface::ConnectionState Sim7kInterface::getConnectionState()
+{
+  sendCommand("AT+CIPSTATUS");
+
+  if (checkNextResponse("OK"))
+  {
+    if (checkNextResponse("STATE: IP INITIAL"))
+    {
+      return ConnectionState::IP_INITIAL;
+    }
+    else if (checkLastResponse("STATE: IP START"))
+    {
+      return ConnectionState::IP_START;
+    }
+    else if (checkLastResponse("STATE: IP CONFIG"))
+    {
+      return ConnectionState::IP_CONFIG;
+    }
+    else if (checkLastResponse("STATE: IP GPRSACT"))
+    {
+      return ConnectionState::IP_GPRSACT;
+    }
+    else if (checkLastResponse("STATE: IP STATUS"))
+    {
+      return ConnectionState::IP_STATUS;
+    }
+    else if (checkLastResponse("STATE: PDP DEACT"))
+    {
+      return ConnectionState::PDP_DEACT;
+    }
+  }
+
+  return ConnectionState::UNDEFINED;
+}
+
 bool Sim7kInterface::setApn(const char* apn)
 {
   const size_t maxApnLen{50};
