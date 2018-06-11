@@ -10,42 +10,7 @@ void setup() {
   if (!sim7k->turnOn())
   {
     writeToLog("Failed to turn modem on.");
-    return;
   }
-
-  writeToLog("Modem is on.");
-  
-  if (!sim7k->turnOnGnss())
-  {
-    writeToLog("Failed to turn GNSS on.");
-    return;
-  }
-
-  writeToLog("GNSS is on.");
-
-  if (!sim7k->setApn(APN))
-  {
-    writeToLog("Failed to set APN.");
-    return;
-  }
-
-  writeToLog("Set APN.");
-
-  if (!sim7k->bringUpGprsConnection())
-  {
-    writeToLog("Failed to bring up GPRS connection.");
-    return;
-  }
-
-  writeToLog("Brought up GPRS connection.");
-
-  if (!sim7k->openBearer())
-  {
-    writeToLog("Failed to open bearer.");
-    return;
-  }
-
-  writeToLog("Opened bearer.");
 }
 
 void loop() {
