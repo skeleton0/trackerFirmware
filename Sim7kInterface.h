@@ -4,13 +4,11 @@
 
 class HardwareSerial;
 
-class Sim7kInterface
-{
+class Sim7kInterface {
   public:
   Sim7kInterface(HardwareSerial* log = nullptr);
 
-  enum class ConnectionState
-  {
+  enum class ConnectionState {
     IP_INITIAL,
     IP_START,
     IP_CONFIG,
@@ -27,12 +25,12 @@ class Sim7kInterface
   bool turnOff();
   bool isOn();
   bool turnOnGnss();
-  ConnectionState getConnectionState();
-  bool setApn(const char* apn);
-  bool bringUpGprsConnection();
-  bool isInDeactState();
-  bool deactGprs();
-  bool isAssignedIp();
+  bool cstt(const char* apn);
+  bool ciicr();
+  bool cipshut();
+  bool cifsr();
+  bool cipstart(const char* protocol, const char* address, const char* port);
+  ConnectionState queryConnectionState();
   
   private:
   void sendCommand(const char* command);
