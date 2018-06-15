@@ -33,6 +33,15 @@ void loop() {
     sim7k->cifsr();
     state = sim7k->queryConnectionState();
     break;
+
+    case Sim7kInterface::ConnectionState::IP_STATUS:
+    sim7k->cipstart("TCP", SERVER_ADDR, SERVER_PORT);
+    state = sim7k->queryConnectionState();
+    break;
+
+    default:
+    state = sim7k->queryConnectionState();
+    break;
   }
 }
 
