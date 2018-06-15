@@ -123,19 +123,19 @@ bool Sim7kInterface::cifsr() {
 }
 
 bool Sim7kInterface::cipstart(const char* protocol, const char* address, const char* port) {
-  const int MAX_PROTO_LEN{4};
+  const size_t MAX_PROTO_LEN{4};
   if (strnlen(protocol, MAX_PROTO_LEN) == MAX_PROTO_LEN) {
     writeToLog("Argument 'protocol' passed to cipstart is too long.");
     return false;
   }
 
-  const int MAX_ADDR_LEN{25};
+  const size_t MAX_ADDR_LEN{25};
   if (strnlen(address, MAX_ADDR_LEN) == MAX_ADDR_LEN) {
     writeToLog("Argument 'address' passed to cipstart is too long.");
     return false;
   }
 
-  const int MAX_PORT_LEN{6};
+  const size_t MAX_PORT_LEN{6};
   if (strnlen(port, MAX_PORT_LEN) == MAX_PORT_LEN) {
     writeToLog("Argument 'port' passed to cipstart is too long.");
     return false;
