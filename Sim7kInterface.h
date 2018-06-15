@@ -16,6 +16,9 @@ class Sim7kInterface
     IP_CONFIG,
     IP_GPRSACT,
     IP_STATUS,
+    TCP_CONNECTING,
+    CONNECT_OK,
+    TCP_CLOSED,
     PDP_DEACT,
     UNDEFINED,
   };

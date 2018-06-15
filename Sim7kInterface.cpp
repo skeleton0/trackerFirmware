@@ -128,6 +128,18 @@ Sim7kInterface::ConnectionState Sim7kInterface::getConnectionState()
     {
       return ConnectionState::IP_STATUS;
     }
+    else if (checkLastResponse("STATE: TCP CONNECTING"))
+    {
+      return ConnectionState::TCP_CONNECTING;
+    }
+    else if (checkLastResponse("STATE: CONNECT OK"))
+    {
+      return ConnectionState::CONNECT_OK;
+    }
+    else if (checkLastResponse("STATE: TCP CLOSED"))
+    {
+      return ConnectionState::TCP_CLOSED;
+    }
     else if (checkLastResponse("STATE: PDP DEACT"))
     {
       return ConnectionState::PDP_DEACT;
