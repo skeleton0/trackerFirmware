@@ -13,7 +13,7 @@ mUartStream{10, 11} {
   mGnssCache.mCourseOverGround[0] = '\0';
   
   //init rx buffer with empty string
-  mRxBuffer[0] = '\0';
+  mRxCache[0] = '\0';
   
   pinMode(6, OUTPUT);
   pinMode(7, OUTPUT);
@@ -43,8 +43,6 @@ bool Sim7kInterface::turnOn() {
     delay(300);
     digitalWrite(pin, HIGH);
     delay(10000);
-
-    flushUart();
 
     sendCommand("AT");
     if (checkNextResponse("ATOK") || checkLastResponse("OK")) {
@@ -98,34 +96,61 @@ bool Sim7kInterface::turnOnGnss() {
 bool Sim7kInterface::checkPositionChange() {
   sendCommand("AT+CGNSINF");
 
+  //read GNSS response into mRxCache
   if (!readLineFromUart()) {
     writeToLog(F("Failed to read response from AT+CGNSINF."));
     return false;
   }
 
-  strtok(mRxBuffer, ","); //GNSS run status
-
-  if (strcmp(strtok(nullptr, ","), "1") != 0) { //Fix status
-     writeToLog(F("GNSS doesn't have fix position."));
-     flushUart();
-     return false;
+  //check if we can separate the first token and it's what we expect from a valid GNSS response
+  char* gnssToken = strtok(mRxCache, ",");
+  if (!gnssToken || strcmp(gnssToken, "+CGNSINF: 1") != 0) {
+    writeToLog(F("Bad GNSS response."));
+    return false;
   }
 
-  strncat(mGnssCache.mTimestamp, strtok(nullptr, ","), TIMESTAMP_SIZE - 1);
-  strncat(mGnssCache.mLatitude, strtok(nullptr, ","), LAT_SIZE - 1);
-  strncat(mGnssCache.mLongitude, strtok(nullptr, ","), LONG_SIZE - 1);
-  strtok(nullptr, ","); //altitude (we don't care about it... for now)
-  strncat(mGnssCache.mSpeedOverGround, strtok(nullptr, ","), SOG_SIZE - 1);
-  strncat(mGnssCache.mCourseOverGround, strtok(nullptr, ","), COG_SIZE - 1);
-
-  float speedOverGround = atof(mGnssCache.mSpeedOverGround);
-
-  if (checkNextResponse("OK") && speedOverGround > 0.0f) {
-    writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
-    return true;
+  //check if the GNSS response indicates a fix status
+  gnssToken = strtok(nullptr, ",");
+  if (!gnssToken || strcmp(gnssToken, "1") != 0) {
+    writeToLog(F("GNSS does not have fix status."));
+    return false;
+  }
+  else {
+    writeToLog(F("GNSS has fix status."));
   }
 
-  writeToLog(F("Speed over ground is 0."));
+  auto cpyGnssToken = [](char* dst, size_t dstSize) {
+    if (char* token = strtok(nullptr, ",")) {
+      strncpy(dst, token, dstSize);
+      dst[dstSize - 1] = '\0'; //in case something goofd up (i.e. token is longer than dstSize)
+      
+      return true;
+    }
+
+    return false;
+  };
+
+  if (cpyGnssToken(mGnssCache.mTimestamp, TIMESTAMP_SIZE) &&
+      cpyGnssToken(mGnssCache.mLatitude, LAT_SIZE) &&
+      cpyGnssToken(mGnssCache.mLongitude, LON_SIZE) &&
+      strtok(nullptr, ",") && //altitude (we don't care about it... for now)
+      cpyGnssToken(mGnssCache.mSpeedOverGround, SOG_SIZE) &&
+      cpyGnssToken(mGnssCache.mCourseOverGround, COG_SIZE)) {
+        
+        float speedOverGround = atof(mGnssCache.mSpeedOverGround);
+        
+        if (checkNextResponse("OK")) {
+          writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
+          return true;
+        }
+        else {
+          writeToLog(F("Speed over ground is 0."));
+        }
+  }
+  else {
+    writeToLog(F("Failed to extract one of the GNSS tokens."));
+  }
+
   return false;
 }
 
@@ -197,27 +222,15 @@ bool Sim7kInterface::cipstart(const char* protocol, const char* address, const c
 bool Sim7kInterface::sendGnssUpdate(const char* id, bool hologramCloudMode) {
   sendCommand("AT+CIPSEND");
 
-  if (!checkNextResponse(">")) {
-    writeToLog(F("AT+CIPSEND didn't return '>' prompt."));
+  if (checkNextResponse("ERROR")) {
+    writeToLog(F("AT+CIPSEND returned error. Probably isn't connected."));
     return false;
   }
 
   if (hologramCloudMode) {
     char jsonMsg[141] = "{\"k\":\"";
     strncat(jsonMsg, id, 8);
-    strcat(jsonMsg, "\",\"d\":\"");
-    strcat(jsonMsg, "{\"id\":\"0\",\"t\":\"");
-    strcat(jsonMsg, mGnssCache.mTimestamp);
-    strcat(jsonMsg, "\",\"lat\":\"");
-    strcat(jsonMsg, mGnssCache.mLatitude);
-    strcat(jsonMsg, "\",\"lon\":\"");
-    strcat(jsonMsg, mGnssCache.mLongitude);
-    strcat(jsonMsg, "\",\"sog\":\"");
-    strcat(jsonMsg, mGnssCache.mSpeedOverGround);
-    strcat(jsonMsg, "\",\"cog\":\"");
-    strcat(jsonMsg, mGnssCache.mCourseOverGround);
-    strcat(jsonMsg, "\"}\",\"t\":\"TOPIC1\"}");
-
+    strcat(jsonMsg, "\",\"d\":\"test\",\"t\":\"TOPIC1\"}");
     sendCommand(jsonMsg);
     
     mUartStream.write(0x1A); //communicates end of msg to sim7k
@@ -285,11 +298,13 @@ Sim7kInterface::ConnectionState Sim7kInterface::queryConnectionState() {
 }
 
 void Sim7kInterface::sendCommand(const char* command) {
+  flushUart();
+  
   writeToLog(F("Sending to modem:"));
   writeToLog(command);
+  
   mUartStream.write(command);
   mUartStream.write("\r");
-  delay(1000); //give modem time to respond
 }
 
 //responses from modem are in the form <CR><LF><response><CR><LF>
@@ -297,7 +312,7 @@ void Sim7kInterface::sendCommand(const char* command) {
 bool Sim7kInterface::readLineFromUart(const uint32_t timeout) { 
   bool foundLineFeed{false};
 
-  for (int i{0}; i < RX_BUFFER_SIZE; i++) {
+  for (int i{0}; i < RX_CACHE_SIZE; i++) {
    char nextByte = mUartStream.read();
 
     //need this loop because arduino will read faster than uart stream transmits
@@ -305,19 +320,19 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
     while (nextByte == -1) {
       if (millis() - startTimer > timeout) {
         writeToLog(F("readLineFromUart() timed out."));
-        mRxBuffer[0] = '\0';
+        mRxCache[0] = '\0';
         return false; 
       }
       
       nextByte = mUartStream.read();
     }
-
+    
     switch (nextByte) {
       case '\n':
       if (foundLineFeed) {
-          mRxBuffer[i] = '\0';
+          mRxCache[i] = '\0';
           writeToLog(F("Received response from modem:"));
-          writeToLog(mRxBuffer);
+          writeToLog(mRxCache);
           return true;
       }
       else {
@@ -333,15 +348,15 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
       break;
 
       default:
-      mRxBuffer[i] = nextByte;
+      mRxCache[i] = nextByte;
       break;
     }
   }
 
-  writeToLog(F("Failed to read line from UART buffer."));
+  writeToLog(F("Uart buffer contains more content than our mRxCache can store"));
 
   //set buffer to empty string
-  mRxBuffer[0] = '\0';
+  mRxCache[0] = '\0';
 
   //read to buffer failed, so finish flushing the line from the uart stream to avoid leaving a partially consumed response on the buffer
   const uint32_t startTimer = millis();
@@ -371,14 +386,14 @@ void Sim7kInterface::flushUart() {
 
 bool Sim7kInterface::checkNextResponse(const char* expectedResponse, const uint32_t timeout) {
   if (readLineFromUart(timeout)) {
-    return strcmp(mRxBuffer, expectedResponse) == 0;
+    return strcmp(mRxCache, expectedResponse) == 0;
   }
 
   return false;
 }
 
 bool Sim7kInterface::checkLastResponse(const char* expectedResponse) {
-  return strcmp(mRxBuffer, expectedResponse) == 0;
+  return strcmp(mRxCache, expectedResponse) == 0;
 }
 
 void Sim7kInterface::writeToLog(const __FlashStringHelper* msg) {
@@ -391,7 +406,7 @@ void Sim7kInterface::writeToLog(const __FlashStringHelper* msg) {
 void Sim7kInterface::writeToLog(const char* msg) {
   if (mLog) {
     mLog->print(F("Sim7k log - "));
-    mLog->println(msg);
+    mLog->println(msg); 
   }
 }
 
@@ -401,7 +416,5 @@ void Sim7kInterface::sendInitialSettings() {
   sendCommand("ATE0");        //disable echo mode
   sendCommand("AT+CNMP=38");  //use LTE only
   sendCommand("AT+CMNB=1");   //use CAT-M only
-
-  flushUart();
 }
 

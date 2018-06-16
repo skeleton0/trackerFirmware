@@ -1,9 +1,9 @@
 #include <SoftwareSerial.h>
 
-#define RX_BUFFER_SIZE 256
+#define RX_CACHE_SIZE 256
 #define TIMESTAMP_SIZE 19 //yyyyMMddhhmmss.sss
 #define LAT_SIZE 11
-#define LONG_SIZE 12
+#define LON_SIZE 12
 #define SOG_SIZE 7
 #define COG_SIZE 7
 
@@ -11,7 +11,7 @@ class HardwareSerial;
 
 struct GnssData {
   char mLatitude[LAT_SIZE];
-  char mLongitude[LONG_SIZE];
+  char mLongitude[LON_SIZE];
   char mTimestamp[TIMESTAMP_SIZE];
   char mSpeedOverGround[SOG_SIZE];
   char mCourseOverGround[COG_SIZE];
@@ -58,7 +58,7 @@ class Sim7kInterface {
   void sendInitialSettings();
   
   SoftwareSerial mUartStream;
-  char mRxBuffer[RX_BUFFER_SIZE];
+  char mRxCache[RX_CACHE_SIZE];
   GnssData mGnssCache;
   HardwareSerial* mLog;
 };
