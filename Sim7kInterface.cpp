@@ -139,7 +139,7 @@ bool Sim7kInterface::checkPositionChange() {
         
         float speedOverGround = atof(mGnssCache.mSpeedOverGround);
         
-        if (checkNextResponse("OK")) {
+        if (checkNextResponse("OK") && speedOverGround > 0.0f) {
           writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
           return true;
         }
