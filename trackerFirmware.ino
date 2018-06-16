@@ -43,7 +43,7 @@ void loop() {
 
     case Sim7kInterface::ConnectionState::CONNECT_OK:
     if (sim7k->checkPositionChange()) {
-      if (!sim7k->sendGnssUpdate(DEVICE_ID)) {
+      if (!sim7k->sendGnssUpdate(HOLOGRAM_DEVICE_KEY, true)) {
         state = sim7k->queryConnectionState();
       }
     }

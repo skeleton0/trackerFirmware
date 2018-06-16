@@ -44,7 +44,7 @@ class Sim7kInterface {
   bool cipshut();
   bool cifsr();
   bool cipstart(const char* protocol, const char* address, const char* port);
-  bool sendGnssUpdate(const char* id);
+  bool sendGnssUpdate(const char* id, bool hologramCloudMode = false);
   ConnectionState queryConnectionState();
   
   private:

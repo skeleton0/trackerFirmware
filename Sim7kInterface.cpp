@@ -194,7 +194,7 @@ bool Sim7kInterface::cipstart(const char* protocol, const char* address, const c
   return checkNextResponse("OK") && checkNextResponse("CONNECT OK", 75000);
 }
 
-bool Sim7kInterface::sendGnssUpdate(const char* id) {
+bool Sim7kInterface::sendGnssUpdate(const char* id, bool hologramCloudMode) {
   sendCommand("AT+CIPSEND");
 
   if (!checkNextResponse(">")) {
@@ -202,24 +202,48 @@ bool Sim7kInterface::sendGnssUpdate(const char* id) {
     return false;
   }
 
-  //build json msg in format of {"id":"0","t":"yyyyMMddhhmmss.sss","lat":"+dd.dddddd","lon":"+ddd.dddddd","sog":"999.99","cog","360.00"}
-  char jsonMsg[105] = "{\"id\":\"";
-  strncat(jsonMsg, id, 1);
-  strcat(jsonMsg, "\",\"t\":\"");
-  strcat(jsonMsg, mGnssCache.mTimestamp);
-  strcat(jsonMsg, "\",\"lat\":\"");
-  strcat(jsonMsg, mGnssCache.mLatitude);
-  strcat(jsonMsg, "\",\"lon\":\"");
-  strcat(jsonMsg, mGnssCache.mLongitude);
-  strcat(jsonMsg, "\",\"sog\":\"");
-  strcat(jsonMsg, mGnssCache.mSpeedOverGround);
-  strcat(jsonMsg, "\",\"cog\":\"");
-  strcat(jsonMsg, mGnssCache.mCourseOverGround);
-  strcat(jsonMsg, "\"}");
+  if (hologramCloudMode) {
+    char jsonMsg[141] = "{\"k\":\"";
+    strncat(jsonMsg, id, 8);
+    strcat(jsonMsg, "\",\"d\":\"");
+    strcat(jsonMsg, "{\"id\":\"0\",\"t\":\"");
+    strcat(jsonMsg, mGnssCache.mTimestamp);
+    strcat(jsonMsg, "\",\"lat\":\"");
+    strcat(jsonMsg, mGnssCache.mLatitude);
+    strcat(jsonMsg, "\",\"lon\":\"");
+    strcat(jsonMsg, mGnssCache.mLongitude);
+    strcat(jsonMsg, "\",\"sog\":\"");
+    strcat(jsonMsg, mGnssCache.mSpeedOverGround);
+    strcat(jsonMsg, "\",\"cog\":\"");
+    strcat(jsonMsg, mGnssCache.mCourseOverGround);
+    strcat(jsonMsg, "\"}\",\"t\":\"TOPIC1\"}");
 
-  sendCommand(jsonMsg);
+    sendCommand(jsonMsg);
+    
+    mUartStream.write(0x1A); //communicates end of msg to sim7k
+  }
+  else {
+    //build json msg in format of {"id":"0","t":"yyyyMMddhhmmss.sss","lat":"+dd.dddddd","lon":"+ddd.dddddd","sog":"999.99","cog","360.00"}
+    char jsonMsg[105] = "{\"id\":\"";
+    strncat(jsonMsg, id, 1);
+    strcat(jsonMsg, "\",\"t\":\"");
+    strcat(jsonMsg, mGnssCache.mTimestamp);
+    strcat(jsonMsg, "\",\"lat\":\"");
+    strcat(jsonMsg, mGnssCache.mLatitude);
+    strcat(jsonMsg, "\",\"lon\":\"");
+    strcat(jsonMsg, mGnssCache.mLongitude);
+    strcat(jsonMsg, "\",\"sog\":\"");
+    strcat(jsonMsg, mGnssCache.mSpeedOverGround);
+    strcat(jsonMsg, "\",\"cog\":\"");
+    strcat(jsonMsg, mGnssCache.mCourseOverGround);
+    strcat(jsonMsg, "\"}");
 
-  mUartStream.write(0x1A); //communicates end of msg to sim7k
+    sendCommand(jsonMsg);
+    
+    mUartStream.write(0x1A); //communicates end of msg to sim7k
+  }
+
+  
 
   return checkNextResponse("SEND OK", 30); 
 }
