@@ -234,9 +234,19 @@ bool Sim7kInterface::sendGnssUpdate(const char* id, bool hologramCloudMode) {
   }
 
   if (hologramCloudMode) {
-    char jsonMsg[141] = "{\"k\":\"";
+    char jsonMsg[94] = "{\"k\":\"";
     strncat(jsonMsg, id, 8);
-    strcat(jsonMsg, "\",\"d\":{},\"t\":\"TOPIC1\"}");
+    strcat(jsonMsg, "\",\"d\":\"");
+    strcat(jsonMsg, mGnssCache.mTimestamp);
+    strcat(jsonMsg, ", ");
+    strcat(jsonMsg, mGnssCache.mLatitude);
+    strcat(jsonMsg, ", ");
+    strcat(jsonMsg, mGnssCache.mLongitude);
+    strcat(jsonMsg, ", ");
+    strcat(jsonMsg, mGnssCache.mSpeedOverGround);
+    strcat(jsonMsg, ", ");
+    strcat(jsonMsg, mGnssCache.mCourseOverGround);
+    strcat(jsonMsg, "\",\"t\":\"GNSS\"}");
     sendCommand(jsonMsg);
     
     mUartStream.write(0x1A); //communicates end of msg to sim7k
