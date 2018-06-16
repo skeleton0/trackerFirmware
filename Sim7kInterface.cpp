@@ -264,7 +264,7 @@ void Sim7kInterface::sendCommand(const char* command) {
   writeToLog("Sending to modem:");
   writeToLog(command);
   mUartStream.write(command);
-  mUartStream.write(F("\r\n"));
+  mUartStream.write(F("\r"));
   delay(1000); //give modem time to respond
 }
 
