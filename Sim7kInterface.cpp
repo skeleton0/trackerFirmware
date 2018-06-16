@@ -191,7 +191,7 @@ bool Sim7kInterface::cipstart(const char* protocol, const char* address, const c
 
   sendCommand(command);
 
-  return checkNextResponse("OK") && checkNextResponse("CONNECT OK", 75);
+  return checkNextResponse("OK") && checkNextResponse("CONNECT OK", 75000);
 }
 
 bool Sim7kInterface::sendGnssUpdate(const char* id) {
