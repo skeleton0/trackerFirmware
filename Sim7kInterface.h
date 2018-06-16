@@ -31,7 +31,7 @@ class Sim7kInterface {
     CONNECT_OK,
     TCP_CLOSED,
     PDP_DEACT,
-    UNDEFINED,
+    MODEM_OFF,
   };
 
   bool turnOn();

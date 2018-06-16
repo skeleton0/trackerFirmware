@@ -7,21 +7,21 @@ Sim7kInterface::ConnectionState state;
 void setup() {
   Serial.begin(4800);
   sim7k = new Sim7kInterface(&Serial);
-  state = Sim7kInterface::ConnectionState::UNDEFINED;
+  state = sim7k->queryConnectionState();
 }
 
 void loop() {
   //finite state machine  
   switch (state)
   {
-    case Sim7kInterface::ConnectionState::UNDEFINED:
+    case Sim7kInterface::ConnectionState::MODEM_OFF:
     sim7k->turnOn();
     sim7k->turnOnGnss();
     state = sim7k->queryConnectionState();
     break;
 
     case Sim7kInterface::ConnectionState::IP_INITIAL:
-    sim7k->cstt("hologram");
+    sim7k->cstt(APN);
     state = sim7k->queryConnectionState();
     break;
 
@@ -61,7 +61,7 @@ void loop() {
 }
 
 void writeToLog(const char* msg) {
-  Serial.print("Main log - ");
+  Serial.print(F("Main log - "));
   Serial.println(msg);
 }
 

@@ -257,14 +257,14 @@ Sim7kInterface::ConnectionState Sim7kInterface::queryConnectionState() {
     }
   }
 
-  return ConnectionState::UNDEFINED;
+  return ConnectionState::MODEM_OFF;
 }
 
 void Sim7kInterface::sendCommand(const char* command) {
   writeToLog("Sending to modem:");
   writeToLog(command);
   mUartStream.write(command);
-  mUartStream.write("\r\n");
+  mUartStream.write(F("\r\n"));
   delay(1000); //give modem time to respond
 }
 
@@ -359,7 +359,7 @@ bool Sim7kInterface::checkLastResponse(const char* expectedResponse) {
 
 void Sim7kInterface::writeToLog(const char* msg) {
   if (mLog) {
-    mLog->write("Sim7k log - ");
+    mLog->print(F("Sim7k log - "));
     mLog->println(msg);
   }
 }
