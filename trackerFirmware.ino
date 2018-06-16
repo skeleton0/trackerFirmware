@@ -10,7 +10,8 @@ void setup() {
   state = Sim7kInterface::ConnectionState::UNDEFINED;
 }
 
-void loop() {  
+void loop() {
+  //finite state machine  
   switch (state)
   {
     case Sim7kInterface::ConnectionState::UNDEFINED:
@@ -29,13 +30,27 @@ void loop() {
     state = sim7k->queryConnectionState();
     break;
 
-    case Sim7kInterface::ConnectionState::IP_CONFIG:
+    case Sim7kInterface::ConnectionState::IP_GPRSACT:
     sim7k->cifsr();
     state = sim7k->queryConnectionState();
     break;
 
     case Sim7kInterface::ConnectionState::IP_STATUS:
+    case Sim7kInterface::ConnectionState::TCP_CLOSED:
     sim7k->cipstart("TCP", SERVER_ADDR, SERVER_PORT);
+    state = sim7k->queryConnectionState();
+    break;
+
+    case Sim7kInterface::ConnectionState::CONNECT_OK:
+    if (sim7k->checkPositionChange()) {
+      if (!sim7k->sendGnssUpdate(DEVICE_ID)) {
+        state = sim7k->queryConnectionState();
+      }
+    }
+    break;
+
+    case Sim7kInterface::ConnectionState::PDP_DEACT:
+    sim7k->cipshut();
     state = sim7k->queryConnectionState();
     break;
 

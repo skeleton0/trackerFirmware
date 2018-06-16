@@ -3,9 +3,16 @@
 #include <Arduino.h>
 
 Sim7kInterface::Sim7kInterface(HardwareSerial* log) :
-mLog(log),
-mUartStream(10, 11) {
-  //init buffer with empty string
+mLog{log},
+mUartStream{10, 11} {
+  //init gnss cache
+  mGnssCache.mLatitude[0] = '\0';
+  mGnssCache.mLongitude[0] = '\0';
+  mGnssCache.mTimestamp[0] = '\0';
+  mGnssCache.mSpeedOverGround[0] = '\0';
+  mGnssCache.mCourseOverGround[0] = '\0';
+  
+  //init rx buffer with empty string
   mRxBuffer[0] = '\0';
   
   pinMode(6, OUTPUT);
@@ -88,6 +95,40 @@ bool Sim7kInterface::turnOnGnss() {
   return checkNextResponse("OK");
 }
 
+bool Sim7kInterface::checkPositionChange() {
+  sendCommand("AT+CGNSINF");
+
+  if (!readLineFromUart()) {
+    writeToLog("Failed to read response from AT+CGNSINF.");
+    return false;
+  }
+
+  strtok(mRxBuffer, ","); //GNSS run status
+
+  if (strcmp(strtok(nullptr, ","), "1") != 0) { //Fix status
+     writeToLog("GNSS doesn't have fix position.");
+     flushUart();
+     return false;
+  }
+
+  strncat(mGnssCache.mTimestamp, strtok(nullptr, ","), TIMESTAMP_SIZE - 1);
+  strncat(mGnssCache.mLatitude, strtok(nullptr, ","), LAT_SIZE - 1);
+  strncat(mGnssCache.mLongitude, strtok(nullptr, ","), LONG_SIZE - 1);
+  strtok(nullptr, ","); //altitude (we don't care about it... for now)
+  strncat(mGnssCache.mSpeedOverGround, strtok(nullptr, ","), SOG_SIZE - 1);
+  strncat(mGnssCache.mCourseOverGround, strtok(nullptr, ","), COG_SIZE - 1);
+
+  float speedOverGround = atof(mGnssCache.mSpeedOverGround);
+
+  if (checkNextResponse("OK") && speedOverGround > 0.0f) {
+    writeToLog("Speed over ground is greater than 0, so we've got a valid position change.");
+    return true;
+  }
+
+  writeToLog("Speed over ground is 0.");
+  return false;
+}
+
 bool Sim7kInterface::cstt(const char* apn) {
   const size_t maxApnLen{50};
   if (strnlen(apn, maxApnLen) == maxApnLen) {
@@ -151,6 +192,36 @@ bool Sim7kInterface::cipstart(const char* protocol, const char* address, const c
   sendCommand(command);
 
   return checkNextResponse("OK") && checkNextResponse("CONNECT OK", 75);
+}
+
+bool Sim7kInterface::sendGnssUpdate(const char* id) {
+  sendCommand("AT+CIPSEND");
+
+  if (!checkNextResponse(">")) {
+    writeToLog("AT+CIPSEND didn't return '>' prompt.");
+    return false;
+  }
+
+  //build json msg in format of {"id":"0","t":"yyyyMMddhhmmss.sss","lat":"+dd.dddddd","lon":"+ddd.dddddd","sog":"999.99","cog","360.00"}
+  char jsonMsg[105] = "{\"id\":\"";
+  strncat(jsonMsg, id, 1);
+  strcat(jsonMsg, "\",\"t\":\"");
+  strcat(jsonMsg, mGnssCache.mTimestamp);
+  strcat(jsonMsg, "\",\"lat\":\"");
+  strcat(jsonMsg, mGnssCache.mLatitude);
+  strcat(jsonMsg, "\",\"lon\":\"");
+  strcat(jsonMsg, mGnssCache.mLongitude);
+  strcat(jsonMsg, "\",\"sog\":\"");
+  strcat(jsonMsg, mGnssCache.mSpeedOverGround);
+  strcat(jsonMsg, "\",\"cog\":\"");
+  strcat(jsonMsg, mGnssCache.mCourseOverGround);
+  strcat(jsonMsg, "\"}");
+
+  sendCommand(jsonMsg);
+
+  mUartStream.write(0x1A); //communicates end of msg to sim7k
+
+  return checkNextResponse("SEND OK", 30); 
 }
 
 Sim7kInterface::ConnectionState Sim7kInterface::queryConnectionState() {

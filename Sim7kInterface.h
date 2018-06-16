@@ -1,8 +1,21 @@
 #include <SoftwareSerial.h>
 
 #define RX_BUFFER_SIZE 256
+#define TIMESTAMP_SIZE 19 //yyyyMMddhhmmss.sss
+#define LAT_SIZE 11
+#define LONG_SIZE 12
+#define SOG_SIZE 7
+#define COG_SIZE 7
 
 class HardwareSerial;
+
+struct GnssData {
+  char mLatitude[LAT_SIZE];
+  char mLongitude[LONG_SIZE];
+  char mTimestamp[TIMESTAMP_SIZE];
+  char mSpeedOverGround[SOG_SIZE];
+  char mCourseOverGround[COG_SIZE];
+};
 
 class Sim7kInterface {
   public:
@@ -25,11 +38,13 @@ class Sim7kInterface {
   bool turnOff();
   bool isOn();
   bool turnOnGnss();
+  bool checkPositionChange();
   bool cstt(const char* apn);
   bool ciicr();
   bool cipshut();
   bool cifsr();
   bool cipstart(const char* protocol, const char* address, const char* port);
+  bool sendGnssUpdate(const char* id);
   ConnectionState queryConnectionState();
   
   private:
@@ -43,6 +58,7 @@ class Sim7kInterface {
   
   SoftwareSerial mUartStream;
   char mRxBuffer[RX_BUFFER_SIZE];
+  GnssData mGnssCache;
   HardwareSerial* mLog;
 };
 
