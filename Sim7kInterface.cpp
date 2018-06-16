@@ -222,7 +222,7 @@ bool Sim7kInterface::cipstart(const char* protocol, const char* address, const c
 bool Sim7kInterface::sendGnssUpdate(const char* id, bool hologramCloudMode) {
   sendCommand("AT+CIPSEND");
 
-  if (checkNextResponse("ERROR")) {
+  if (checkNextResponse("ERROR", 500)) {
     writeToLog(F("AT+CIPSEND returned error. Probably isn't connected."));
     return false;
   }
@@ -256,9 +256,7 @@ bool Sim7kInterface::sendGnssUpdate(const char* id, bool hologramCloudMode) {
     mUartStream.write(0x1A); //communicates end of msg to sim7k
   }
 
-  
-
-  return checkNextResponse("SEND OK", 30); 
+  return checkNextResponse("SEND OK", 30000); 
 }
 
 Sim7kInterface::ConnectionState Sim7kInterface::queryConnectionState() {
