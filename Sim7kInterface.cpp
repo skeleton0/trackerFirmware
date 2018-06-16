@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 Sim7kInterface::Sim7kInterface(HardwareSerial* log) :
+mServerNeedsUpdate{true},
 mLog{log},
 mUartStream{10, 11} {
   //init gnss cache
@@ -143,6 +144,11 @@ bool Sim7kInterface::checkPositionChange() {
           writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
           return true;
         }
+        else if (checkLastResponse("OK") && mServerNeedsUpdate) {
+          writeToLog(F("Speed over ground is 0 however server needs update."));
+          mServerNeedsUpdate = false;
+          return true;
+        }
         else {
           writeToLog(F("Speed over ground is 0."));
         }
@@ -230,7 +236,7 @@ bool Sim7kInterface::sendGnssUpdate(const char* id, bool hologramCloudMode) {
   if (hologramCloudMode) {
     char jsonMsg[141] = "{\"k\":\"";
     strncat(jsonMsg, id, 8);
-    strcat(jsonMsg, "\",\"d\":\"test\",\"t\":\"TOPIC1\"}");
+    strcat(jsonMsg, "\",\"d\":{},\"t\":\"TOPIC1\"}");
     sendCommand(jsonMsg);
     
     mUartStream.write(0x1A); //communicates end of msg to sim7k

@@ -60,6 +60,7 @@ class Sim7kInterface {
   SoftwareSerial mUartStream;
   char mRxCache[RX_CACHE_SIZE];
   GnssData mGnssCache;
+  bool mServerNeedsUpdate;
   HardwareSerial* mLog;
 };
 
