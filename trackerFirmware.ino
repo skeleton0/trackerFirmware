@@ -47,6 +47,7 @@ void loop() {
         state = sim7k->queryConnectionState();
       }
     }
+    delay(UPDATE_FREQUENCY);
     break;
 
     case Sim7kInterface::ConnectionState::PDP_DEACT:
