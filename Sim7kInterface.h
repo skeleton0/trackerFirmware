@@ -53,6 +53,7 @@ class Sim7kInterface {
   void flushUart();
   bool checkNextResponse(const char* expectedResponse, const uint32_t timeout = 5000);
   bool checkLastResponse(const char* expectedResponse);
+  void writeToLog(const __FlashStringHelper* msg);
   void writeToLog(const char* msg);
   void sendInitialSettings();
   

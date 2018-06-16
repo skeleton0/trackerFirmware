@@ -24,11 +24,11 @@ mUartStream{10, 11} {
 
   sendCommand("AT");
   if (checkNextResponse("ATOK") || checkLastResponse("OK")) { //ATOK when echo mode is enabled
-    writeToLog("Modem is initially on.");
+    writeToLog(F("Modem is initially on."));
     sendInitialSettings();
   }
   else {
-    writeToLog("Modem is initially off."); 
+    writeToLog(F("Modem is initially off.")); 
   }
   
 }
@@ -56,19 +56,19 @@ bool Sim7kInterface::turnOn() {
   };
 
   if (turnOnViaPin(6)) {
-    writeToLog("Turned on modem via pin 6.");
+    writeToLog(F("Turned on modem via pin 6."));
     return true;
   }
   else {
-    writeToLog("Failed to start modem via pin 6.");
-    writeToLog("Attempting to start modem with emergency reset via pin 7.");
+    writeToLog(F("Failed to start modem via pin 6."));
+    writeToLog(F("Attempting to start modem with emergency reset via pin 7."));
 
     if(turnOnViaPin(7)) {
-      writeToLog("Emergency reset successful.");
+      writeToLog(F("Emergency reset successful."));
       return true;
     }
 
-    writeToLog("Emergency reset failed.");
+    writeToLog(F("Emergency reset failed."));
   }
   
   return false;
@@ -84,7 +84,7 @@ bool Sim7kInterface::turnOff() {
 }
 
 bool Sim7kInterface::isOn() {
-  writeToLog("Checking if modem is on...");
+  writeToLog(F("Checking if modem is on..."));
   sendCommand("AT");
   return checkNextResponse("OK");
 }
@@ -99,14 +99,14 @@ bool Sim7kInterface::checkPositionChange() {
   sendCommand("AT+CGNSINF");
 
   if (!readLineFromUart()) {
-    writeToLog("Failed to read response from AT+CGNSINF.");
+    writeToLog(F("Failed to read response from AT+CGNSINF."));
     return false;
   }
 
   strtok(mRxBuffer, ","); //GNSS run status
 
   if (strcmp(strtok(nullptr, ","), "1") != 0) { //Fix status
-     writeToLog("GNSS doesn't have fix position.");
+     writeToLog(F("GNSS doesn't have fix position."));
      flushUart();
      return false;
   }
@@ -121,18 +121,18 @@ bool Sim7kInterface::checkPositionChange() {
   float speedOverGround = atof(mGnssCache.mSpeedOverGround);
 
   if (checkNextResponse("OK") && speedOverGround > 0.0f) {
-    writeToLog("Speed over ground is greater than 0, so we've got a valid position change.");
+    writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
     return true;
   }
 
-  writeToLog("Speed over ground is 0.");
+  writeToLog(F("Speed over ground is 0."));
   return false;
 }
 
 bool Sim7kInterface::cstt(const char* apn) {
   const size_t maxApnLen{50};
   if (strnlen(apn, maxApnLen) == maxApnLen) {
-    writeToLog("Apn is too long.");
+    writeToLog(F("Apn is too long."));
     return false;
   }
   
@@ -166,19 +166,19 @@ bool Sim7kInterface::cifsr() {
 bool Sim7kInterface::cipstart(const char* protocol, const char* address, const char* port) {
   const size_t MAX_PROTO_LEN{4};
   if (strnlen(protocol, MAX_PROTO_LEN) == MAX_PROTO_LEN) {
-    writeToLog("Argument 'protocol' passed to cipstart is too long.");
+    writeToLog(F("Argument 'protocol' passed to cipstart is too long."));
     return false;
   }
 
   const size_t MAX_ADDR_LEN{25};
   if (strnlen(address, MAX_ADDR_LEN) == MAX_ADDR_LEN) {
-    writeToLog("Argument 'address' passed to cipstart is too long.");
+    writeToLog(F("Argument 'address' passed to cipstart is too long."));
     return false;
   }
 
   const size_t MAX_PORT_LEN{6};
   if (strnlen(port, MAX_PORT_LEN) == MAX_PORT_LEN) {
-    writeToLog("Argument 'port' passed to cipstart is too long.");
+    writeToLog(F("Argument 'port' passed to cipstart is too long."));
     return false;
   }
 
@@ -198,7 +198,7 @@ bool Sim7kInterface::sendGnssUpdate(const char* id) {
   sendCommand("AT+CIPSEND");
 
   if (!checkNextResponse(">")) {
-    writeToLog("AT+CIPSEND didn't return '>' prompt.");
+    writeToLog(F("AT+CIPSEND didn't return '>' prompt."));
     return false;
   }
 
@@ -261,10 +261,10 @@ Sim7kInterface::ConnectionState Sim7kInterface::queryConnectionState() {
 }
 
 void Sim7kInterface::sendCommand(const char* command) {
-  writeToLog("Sending to modem:");
+  writeToLog(F("Sending to modem:"));
   writeToLog(command);
   mUartStream.write(command);
-  mUartStream.write(F("\r"));
+  mUartStream.write("\r");
   delay(1000); //give modem time to respond
 }
 
@@ -280,7 +280,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
     const uint32_t startTimer = millis();
     while (nextByte == -1) {
       if (millis() - startTimer > timeout) {
-        writeToLog("readLineFromUart() timed out.");
+        writeToLog(F("readLineFromUart() timed out."));
         mRxBuffer[0] = '\0';
         return false; 
       }
@@ -292,7 +292,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
       case '\n':
       if (foundLineFeed) {
           mRxBuffer[i] = '\0';
-          writeToLog("Received response from modem:");
+          writeToLog(F("Received response from modem:"));
           writeToLog(mRxBuffer);
           return true;
       }
@@ -314,7 +314,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
     }
   }
 
-  writeToLog("Failed to read line from UART buffer.");
+  writeToLog(F("Failed to read line from UART buffer."));
 
   //set buffer to empty string
   mRxBuffer[0] = '\0';
@@ -324,7 +324,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
   char nextByte{0};
   while (!foundLineFeed && nextByte != '\n') {
     if (millis() - startTimer > timeout) {
-      writeToLog("readLineFromUart() timed out while flushing buffer after read failure.");
+      writeToLog(F("readLineFromUart() timed out while flushing buffer after read failure."));
       return false;
     }
     
@@ -339,7 +339,7 @@ bool Sim7kInterface::readLineFromUart(const uint32_t timeout) {
 }
 
 void Sim7kInterface::flushUart() {
-  writeToLog("Flushing UART stream.");
+  writeToLog(F("Flushing UART stream."));
   while (mUartStream.available()) {
     readLineFromUart();
   }
@@ -355,6 +355,13 @@ bool Sim7kInterface::checkNextResponse(const char* expectedResponse, const uint3
 
 bool Sim7kInterface::checkLastResponse(const char* expectedResponse) {
   return strcmp(mRxBuffer, expectedResponse) == 0;
+}
+
+void Sim7kInterface::writeToLog(const __FlashStringHelper* msg) {
+  if (mLog) {
+    mLog->print(F("Sim7k log - "));
+    mLog->println(msg);
+  }
 }
 
 void Sim7kInterface::writeToLog(const char* msg) {

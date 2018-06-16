@@ -60,7 +60,7 @@ void loop() {
   }
 }
 
-void writeToLog(const char* msg) {
+void writeToLog(const __FlashStringHelper* msg) {
   Serial.print(F("Main log - "));
   Serial.println(msg);
 }
