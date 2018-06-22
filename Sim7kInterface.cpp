@@ -3,7 +3,6 @@
 #include <Arduino.h>
 
 Sim7kInterface::Sim7kInterface(HardwareSerial* log) :
-mServerNeedsUpdate{true},
 mLog{log},
 mUartStream{10, 11} {
   //init gnss cache
@@ -94,7 +93,7 @@ bool Sim7kInterface::turnOnGnss() {
   return checkNextResponse("OK");
 }
 
-bool Sim7kInterface::checkPositionChange() {
+bool Sim7kInterface::hasPositionFix() {
   sendCommand("AT+CGNSINF");
 
   //read GNSS response into mRxCache
@@ -116,12 +115,18 @@ bool Sim7kInterface::checkPositionChange() {
     writeToLog(F("GNSS does not have fix status."));
     return false;
   }
-  else {
-    writeToLog(F("GNSS has fix status."));
+
+  return true;
+}
+
+bool Sim7kInterface::positionIsMoving() {
+  if (!hasPositionFix())
+  {
+    return false;
   }
 
   auto cpyGnssToken = [](char* dst, size_t dstSize) {
-    if (char* token = strtok(nullptr, ",")) {
+    if (char* token = strtok(nullptr, ",")) { //we call strtok in hasPositionFix() (probably not very good code design)
       strncpy(dst, token, dstSize);
       dst[dstSize - 1] = '\0'; //in case something goofd up (i.e. token is longer than dstSize)
       
@@ -142,11 +147,6 @@ bool Sim7kInterface::checkPositionChange() {
         
         if (checkNextResponse("OK") && speedOverGround > 0.0f) {
           writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
-          return true;
-        }
-        else if (checkLastResponse("OK") && mServerNeedsUpdate) {
-          writeToLog(F("Speed over ground is 0 however server needs update."));
-          mServerNeedsUpdate = false;
           return true;
         }
         else {

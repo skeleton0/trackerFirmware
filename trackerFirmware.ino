@@ -1,13 +1,15 @@
 #include "Sim7kInterface.h"
 #include "Config.h"
 
-Sim7kInterface* sim7k;
-Sim7kInterface::ConnectionState state;
+Sim7kInterface* sim7k{nullptr};
+Sim7kInterface::ConnectionState state{Sim7kInterface::ConnectionState::MODEM_OFF};
+unsigned long timer{0};
 
 void setup() {
   Serial.begin(4800);
   sim7k = new Sim7kInterface(&Serial);
   state = sim7k->queryConnectionState();
+  timer = millis();
 }
 
 void loop() {
@@ -42,12 +44,9 @@ void loop() {
     break;
 
     case Sim7kInterface::ConnectionState::CONNECT_OK:
-    if (sim7k->checkPositionChange()) {
-      if (!sim7k->sendGnssUpdate(HOLOGRAM_DEVICE_KEY, true)) {
-        state = sim7k->queryConnectionState();
-      }
+    if (!handlePositionUpdate()) {
+      state = sim7k->queryConnectionState();
     }
-    delay(UPDATE_FREQUENCY);
     break;
 
     case Sim7kInterface::ConnectionState::PDP_DEACT:
@@ -59,6 +58,33 @@ void loop() {
     state = sim7k->queryConnectionState();
     break;
   }
+}
+
+bool handlePositionUpdate() {
+  if (!sim7k->hasPositionFix()) {
+      return true;
+  }
+
+  bool sendUpdate{false};
+  
+  if (millis() - timer > SITTING_UPDATE_FREQUENCY) {
+    writeToLog(F("Sending position due to SITTING_UPDATE_FREQUENCY trigger."));
+    sendUpdate = true;
+  }
+  else if (millis() - timer > MOVING_UPDATE_FREQUENCY && sim7k->positionIsMoving()) {
+    writeToLog(F("Sending position due to MOVING_UPDATE_FREQUENCY trigger."));
+    sendUpdate = true;
+  }
+
+  if (sendUpdate) {
+    if (!sim7k->sendGnssUpdate(DEVICE_ID)) {
+      return false;
+    }
+    
+    timer = millis(); //reset timer
+  }
+
+  return true;
 }
 
 void writeToLog(const __FlashStringHelper* msg) {

@@ -38,7 +38,8 @@ class Sim7kInterface {
   bool turnOff();
   bool isOn();
   bool turnOnGnss();
-  bool checkPositionChange();
+  bool hasPositionFix();
+  bool positionIsMoving();
   bool cstt(const char* apn);
   bool ciicr();
   bool cipshut();
@@ -60,7 +61,6 @@ class Sim7kInterface {
   SoftwareSerial mUartStream;
   char mRxCache[RX_CACHE_SIZE];
   GnssData mGnssCache;
-  bool mServerNeedsUpdate;
   HardwareSerial* mLog;
 };
 
