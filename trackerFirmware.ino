@@ -47,6 +47,10 @@ void loop() {
     if (!handlePositionUpdate()) {
       state = sim7k->queryConnectionState();
     }
+    else {
+      //if the tracker is moving and sent an update, by the time we wake up again we'll be due to send another update
+      delay(MOVING_UPDATE_FREQUENCY);
+    }
     break;
 
     case Sim7kInterface::ConnectionState::PDP_DEACT:
@@ -64,7 +68,7 @@ bool handlePositionUpdate() {
   if (!sim7k->hasPositionFix()) {
       return true;
   }
-
+  
   bool sendUpdate{false};
   
   if (millis() - timer > SITTING_UPDATE_FREQUENCY) {
