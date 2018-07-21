@@ -27,9 +27,10 @@ class Sim7kInterface {
     IP_CONFIG,
     IP_GPRSACT,
     IP_STATUS,
-    TCP_CONNECTING,
+    UDP_CONNECTING,
     CONNECT_OK,
-    TCP_CLOSED,
+    UDP_CLOSING,
+    UDP_CLOSED,
     PDP_DEACT,
     MODEM_OFF,
   };
@@ -45,7 +46,7 @@ class Sim7kInterface {
   bool cipshut();
   bool cifsr();
   bool cipstart(const char* protocol, const char* address, const char* port);
-  bool sendGnssUpdate(const char* id, bool hologramCloudMode = false);
+  bool sendGnssUpdate(const char* id);
   ConnectionState queryConnectionState();
   
   private:

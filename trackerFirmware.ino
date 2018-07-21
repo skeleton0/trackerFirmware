@@ -38,8 +38,8 @@ void loop() {
     break;
 
     case Sim7kInterface::ConnectionState::IP_STATUS:
-    case Sim7kInterface::ConnectionState::TCP_CLOSED:
-    sim7k->cipstart("TCP", SERVER_ADDR, SERVER_PORT);
+    case Sim7kInterface::ConnectionState::UDP_CLOSED:
+    sim7k->cipstart("UDP", SERVER_ADDR, SERVER_PORT);
     state = sim7k->queryConnectionState();
     break;
 
