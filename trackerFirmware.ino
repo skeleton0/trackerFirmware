@@ -9,7 +9,11 @@ void setup() {
   Serial.begin(4800);
   sim7k = new Sim7kInterface(&Serial);
   state = sim7k->queryConnectionState();
+  
   timer = millis();
+
+  //makes the tracker send an update on start up
+  timer += SITTING_UPDATE_FREQUENCY;
 }
 
 void loop() {
