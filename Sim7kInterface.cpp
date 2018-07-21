@@ -93,7 +93,7 @@ bool Sim7kInterface::turnOnGnss() {
   return checkNextResponse("OK");
 }
 
-bool Sim7kInterface::hasPositionFix() {
+bool Sim7kInterface::cachePositionUpdate() {
   sendCommand("AT+CGNSINF");
 
   //read GNSS response into mRxCache
@@ -116,17 +116,9 @@ bool Sim7kInterface::hasPositionFix() {
     return false;
   }
 
-  return true;
-}
-
-bool Sim7kInterface::positionIsMoving() {
-  if (!hasPositionFix())
-  {
-    return false;
-  }
-
+  //lambda for copying gnss fields into cache variable
   auto cpyGnssToken = [](char* dst, size_t dstSize) {
-    if (char* token = strtok(nullptr, ",")) { //we call strtok in hasPositionFix() (probably not very good code design)
+    if (char* token = strtok(nullptr, ",")) {
       strncpy(dst, token, dstSize);
       dst[dstSize - 1] = '\0'; //in case something goofd up (i.e. token is longer than dstSize)
       
@@ -143,21 +135,25 @@ bool Sim7kInterface::positionIsMoving() {
       cpyGnssToken(mGnssCache.mSpeedOverGround, SOG_SIZE) &&
       cpyGnssToken(mGnssCache.mCourseOverGround, COG_SIZE)) {
         
-        float speedOverGround = atof(mGnssCache.mSpeedOverGround);
-        
-        if (checkNextResponse("OK") && speedOverGround > 0.0f) {
-          writeToLog(F("Speed over ground is greater than 0, so we've got a valid position change."));
+        if (checkNextResponse("OK")) {
           return true;
         }
         else {
-          writeToLog(F("Speed over ground is 0."));
+          writeToLog(F("Bad GNSS response."));
+          return false;
         }
-  }
-  else {
-    writeToLog(F("Failed to extract one of the GNSS tokens."));
   }
 
   return false;
+}
+
+bool Sim7kInterface::positionIsMoving() {
+  if (strcmp(mGnssCache.mSpeedOverGround, "0.00") == 0)
+  {
+    return false;
+  }
+
+  return true;
 }
 
 bool Sim7kInterface::cstt(const char* apn) {

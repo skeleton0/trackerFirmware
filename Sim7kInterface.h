@@ -39,7 +39,7 @@ class Sim7kInterface {
   bool turnOff();
   bool isOn();
   bool turnOnGnss();
-  bool hasPositionFix();
+  bool cachePositionUpdate();
   bool positionIsMoving();
   bool cstt(const char* apn);
   bool ciicr();

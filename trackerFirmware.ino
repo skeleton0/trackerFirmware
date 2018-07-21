@@ -69,7 +69,7 @@ void loop() {
 }
 
 bool handlePositionUpdate() {
-  if (!sim7k->hasPositionFix()) {
+  if (!sim7k->cachePositionUpdate()) {
       return true;
   }
   
