@@ -229,25 +229,25 @@ bool Sim7kInterface::sendGnssUpdate(const char* id) {
     return false;
   }
   
-  //build json msg in format of {"id":"0","t":"yyyyMMddhhmmss.sss","lat":"+dd.dddddd","lon":"+ddd.dddddd","sog":"999.99","cog","360.00"}
-  char jsonMsg[105] = "{\"id\":\"";
-  strncat(jsonMsg, id, 1);
-  strcat(jsonMsg, "\",\"t\":\"");
-  strcat(jsonMsg, mGnssCache.mTimestamp);
-  strcat(jsonMsg, "\",\"lat\":\"");
-  strcat(jsonMsg, mGnssCache.mLatitude);
-  strcat(jsonMsg, "\",\"lon\":\"");
-  strcat(jsonMsg, mGnssCache.mLongitude);
-  strcat(jsonMsg, "\",\"sog\":\"");
-  strcat(jsonMsg, mGnssCache.mSpeedOverGround);
-  strcat(jsonMsg, "\",\"cog\":\"");
-  strcat(jsonMsg, mGnssCache.mCourseOverGround);
-  strcat(jsonMsg, "\"}");
+  //build msg in the format of id,timestamp,lat,lon,sog,cog
+  char msg[56] = {};
+  strncat(msg, id, 3);
+  strcat(msg, ",");
+  strcat(msg, mGnssCache.mTimestamp);
+  strcat(msg, ",");
+  strcat(msg, mGnssCache.mLatitude);
+  strcat(msg, ",");
+  strcat(msg, mGnssCache.mLongitude);
+  strcat(msg, ",");
+  strcat(msg, mGnssCache.mSpeedOverGround);
+  strcat(msg, ",");
+  strcat(msg, mGnssCache.mCourseOverGround);
 
-  sendCommand(jsonMsg);
-    
+  writeToLog(F("UDP payload to be sent to server: "));
+  writeToLog(msg);
+
+  mUartStream.write(msg);
   mUartStream.write(0x1A); //communicates end of msg to sim7k
-
 
   return checkNextResponse("SEND OK", 30000); 
 }
