@@ -229,24 +229,24 @@ bool Sim7kInterface::sendGnssUpdate(const char* id) {
     return false;
   }
   
-  //build msg in the format of id,timestamp,lat,lon,sog,cog
-  char msg[56] = {};
-  strncat(msg, id, 3);
-  strcat(msg, ",");
-  strcat(msg, mGnssCache.mTimestamp);
-  strcat(msg, ",");
-  strcat(msg, mGnssCache.mLatitude);
-  strcat(msg, ",");
-  strcat(msg, mGnssCache.mLongitude);
-  strcat(msg, ",");
-  strcat(msg, mGnssCache.mSpeedOverGround);
-  strcat(msg, ",");
-  strcat(msg, mGnssCache.mCourseOverGround);
+  //build payload in the format of id,timestamp,lat,lon,sog,cog
+  char payload[60] = {};
+  strncat(payload, id, 3);
+  strcat(payload, ",");
+  strcat(payload, mGnssCache.mTimestamp);
+  strcat(payload, ",");
+  strcat(payload, mGnssCache.mLatitude);
+  strcat(payload, ",");
+  strcat(payload, mGnssCache.mLongitude);
+  strcat(payload, ",");
+  strcat(payload, mGnssCache.mSpeedOverGround);
+  strcat(payload, ",");
+  strcat(payload, mGnssCache.mCourseOverGround);
 
   writeToLog(F("UDP payload to be sent to server: "));
-  writeToLog(msg);
+  writeToLog(payload);
 
-  mUartStream.write(msg);
+  mUartStream.write(payload);
   mUartStream.write(0x1A); //communicates end of msg to sim7k
 
   return checkNextResponse("SEND OK", 30000); 
